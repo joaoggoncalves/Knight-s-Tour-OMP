@@ -84,8 +84,8 @@ bool tour::findtour(tour& T, int imove) {
   int cx = T.sx;
   int cy = T.sy;
   int cs = T.size;
-  int tnum = omp_get_thread_num();
-  int nivel = omp_get_level();
+  //int tnum = omp_get_thread_num();
+  //int nivel = omp_get_level();
   for (int i = 0; i < 8; ++i) {
     int tcx = cx + movimento[i][0];
     int tcy = cy + movimento[i][1];
@@ -98,8 +98,7 @@ bool tour::findtour(tour& T, int imove) {
       temp.board[tcx][tcy] = imove+1;
       temp.sx = tcx;
       temp.sy = tcy;
-      //cout << "imove+1: " << imove+1 << endl;
-      #pragma omp task firstprivate(T, temp, imove) if (i < 2)
+      #pragma omp task if (i < 2)
       {
         if(findtour(temp, imove+1)) {
           cout << temp << endl;
