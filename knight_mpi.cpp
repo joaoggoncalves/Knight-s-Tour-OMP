@@ -16,13 +16,13 @@ auto start = chrono::steady_clock::now();
 class tour {
     vector< vector< int > > board;
     int sx, sy, size;
-    bool inverte;
 
 public:
     bool findtour(tour& , int );
+    bool findtour_completo(tour&, int );
 
     // Constructor
-    tour(int s = 5, int startx = 0, int starty = 0, bool inverteparam = false) :sx(startx), sy(starty), size(s), inverte(inverteparam)
+    tour(int s = 5, int startx = 0, int starty = 0) :sx(startx), sy(starty), size(s)
     {
         // Get the board to size x size
         board.resize(size);
@@ -39,12 +39,12 @@ public:
 
         // Solve the problem
         if(!findtour(*this, 0)) {
-            cout << "No solutions found\n";
+            cout << "No solutions found by process of rank: " << idprocesso << endl;
         }
     }
 
     // Copy constructor
-    tour(const tour& T, bool inverteparam): sx(T.sx), sy(T.sy), size(T.size), inverte(inverteparam) {
+    tour(const tour& T): sx(T.sx), sy(T.sy), size(T.size) {
         this->board.resize(size);
         for(int i = 0; i < size; ++i)
         board[i].resize(size);
@@ -78,16 +78,58 @@ bool tour::findtour(tour& T, int imove) {
     int cx = T.sx;
     int cy = T.sy;
     int cs = T.size;
-    //int tnum = omp_get_thread_num();
-    //int nivel = omp_get_level();
-    if (!inverte) {
-        for (int i = 0; i < 8; ++i) {
+    if (idprocesso == 0) {
+        for (int i = 0; i < 2; ++i) {
             int tcx = cx + movimento[i][0];
             int tcy = cy + movimento[i][1];
-            //cout << "Thread: " << tnum << endl << "Tour: " << T << endl;
-            //cout << "Thread: " << tnum << endl;
-            // Is this a valid move?
-            // Has this place been visited yet
+            if ((tcx >= 0) &&  (tcy >= 0)  &&  (tcx < cs) &&  (tcy < cs) && (T.board[tcx][tcy] == -1)) {
+                tour temp(T);
+                temp.board[tcx][tcy] = imove+1;
+                temp.sx = tcx;
+                temp.sy = tcy;
+                findtour_completo(temp, imove+1);
+            }
+        }
+    } else if (idprocesso == 1) {
+        for (int i = 2; i < 4; ++i) {
+            int tcx = cx + movimento[i][0];
+            int tcy = cy + movimento[i][1];
+            if ((tcx >= 0) &&  (tcy >= 0)  &&  (tcx < cs) &&  (tcy < cs) && (T.board[tcx][tcy] == -1)) {
+                tour temp(T);
+                temp.board[tcx][tcy] = imove+1;
+                temp.sx = tcx;
+                temp.sy = tcy;
+                findtour_completo(temp, imove+1);
+            }
+        }
+    } else if (idprocesso == 2) {
+        for (int i = 4; i < 6; ++i) {
+            int tcx = cx + movimento[i][0];
+            int tcy = cy + movimento[i][1];
+            if ((tcx >= 0) &&  (tcy >= 0)  &&  (tcx < cs) &&  (tcy < cs) && (T.board[tcx][tcy] == -1)) {
+                tour temp(T);
+                temp.board[tcx][tcy] = imove+1;
+                temp.sx = tcx;
+                temp.sy = tcy;
+                findtour_completo(temp, imove+1);
+            }
+        }
+    } else if (idprocesso == 3) {
+        for (int i = 6; i < 8; ++i) {
+            int tcx = cx + movimento[i][0];
+            int tcy = cy + movimento[i][1];
+            if ((tcx >= 0) &&  (tcy >= 0)  &&  (tcx < cs) &&  (tcy < cs) && (T.board[tcx][tcy] == -1)) {
+                tour temp(T);
+                temp.board[tcx][tcy] = imove+1;
+                temp.sx = tcx;
+                temp.sy = tcy;
+                findtour_completo(temp, imove+1);
+            }
+        }
+    } else if (idprocesso == 4) {
+        for (int i = 7; i >= 0; ++i) {
+            int tcx = cx + movimento[i][0];
+            int tcy = cy + movimento[i][1];
             if ((tcx >= 0) &&  (tcy >= 0)  &&  (tcx < cs) &&  (tcy < cs) && (T.board[tcx][tcy] == -1)) {
                 tour temp(T);
                 temp.board[tcx][tcy] = imove+1;
@@ -98,32 +140,40 @@ bool tour::findtour(tour& T, int imove) {
                     auto end = chrono::steady_clock::now();
                     auto diff = end - start;
                     cout << chrono::duration <double, milli> (diff).count() << " ms" << endl;
+                    cout << "Solution found by proccess of rank: " << idprocesso << endl;
                     MPI_Abort(MPI_COMM_WORLD, MPI_SUCCESS);
-                    exit(0);
+                    MPI_Finalize();
                 }
             }
         }
-    } else {
-        for (int i = 7; i >=0; --i) {
-            int tcx = cx + movimento[i][0];
-            int tcy = cy + movimento[i][1];
-            //cout << "Thread: " << tnum << endl << "Tour: " << T << endl;
-            //cout << "Thread: " << tnum << endl;
-            // Is this a valid move?
-            // Has this place been visited yet
-            if ((tcx >= 0) &&  (tcy >= 0)  &&  (tcx < cs) &&  (tcy < cs) && (T.board[tcx][tcy] == -1)) {
-                tour temp(T);
-                temp.board[tcx][tcy] = imove+1;
-                temp.sx = tcx;
-                temp.sy = tcy;
-                if(findtour(temp, imove+1)) {
-                    cout << temp << endl;
-                    auto end = chrono::steady_clock::now();
-                    auto diff = end - start;
-                    cout << chrono::duration <double, milli> (diff).count() << " ms" << endl;
-                    MPI_Abort(MPI_COMM_WORLD, MPI_SUCCESS);
-                    exit(0);
-                }
+    }
+    return false;
+}
+
+bool tour::findtour_completo(tour& T, int imove) {
+    if(imove == (size*size - 1)) return true;
+    // make a move
+    int cx = T.sx;
+    int cy = T.sy;
+    int cs = T.size;
+    for (int i = 0; i < 8; ++i) {
+        int tcx = cx + movimento[i][0];
+        int tcy = cy + movimento[i][1];
+        // Is this a valid move?
+        // Has this place been visited yet
+        if ((tcx >= 0) &&  (tcy >= 0)  &&  (tcx < cs) &&  (tcy < cs) && (T.board[tcx][tcy] == -1)) {
+            tour temp(T);
+            temp.board[tcx][tcy] = imove+1;
+            temp.sx = tcx;
+            temp.sy = tcy;
+            if(findtour_completo(temp, imove+1)) {
+                cout << temp << endl;
+                auto end = chrono::steady_clock::now();
+                auto diff = end - start;
+                cout << chrono::duration <double, milli> (diff).count() << " ms" << endl;
+                cout << "Solution found by proccess of rank: " << idprocesso << endl;
+                MPI_Abort(MPI_COMM_WORLD, MPI_SUCCESS);
+                MPI_Finalize();
             }
         }
     }
@@ -149,14 +199,13 @@ int main(int argc, char *argv[]) {
         MPI_Send(&start_x, 1, MPI_INT, 1, 1, MPI_COMM_WORLD);
         MPI_Send(&start_y, 1, MPI_INT, 1, 1, MPI_COMM_WORLD);
         start = chrono::steady_clock::now();
-        tour T(table_size, start_x, start_y, false);
+        tour T(table_size, start_x, start_y);
     } else {
         MPI_Recv(&table_size, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         MPI_Recv(&start_x, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         MPI_Recv(&start_y, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        tour T2(table_size, start_x, start_y, true);
+        tour T2(table_size, start_x, start_y);
     }
-    MPI_Finalize();
     return 0;
 }
 
