@@ -127,7 +127,7 @@ bool tour::findtour(tour& T, int imove) {
             }
         }
     } else if (idprocesso == 4) {
-        for (int i = 7; i >= 0; ++i) {
+        for (int i = 7; i >= 0; --i) {
             int tcx = cx + movimento[i][0];
             int tcy = cy + movimento[i][1];
             if ((tcx >= 0) &&  (tcy >= 0)  &&  (tcx < cs) &&  (tcy < cs) && (T.board[tcx][tcy] == -1)) {
